@@ -806,6 +806,20 @@ body {
   .topbar { padding: 14px 16px; }
   .content { padding: 16px; }
 }
+
+  /* file:// warning banner */
+  .file-warning {
+    background: #fff3cd;
+    border-bottom: 1px solid #ffc107;
+    padding: 10px 28px;
+    font-size: 12px;
+    color: #856404;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+  .file-warning.show { display: flex; }
+  .file-warning a { color: #856404; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -871,7 +885,7 @@ body {
     <nav class="sidebar-nav">
       <div class="nav-section-label">카테고리</div>
       <div id="catList"></div>
-      <button class="add-cat-btn" onclick="openCatModal()">+ 카테고리 추가</button>
+      <button class="add-cat-btn" onclick="window._app.openCatModal()">+ 카테고리 추가</button>
     </nav>
 
     <div class="firebase-status" id="fbStatus">
@@ -882,21 +896,27 @@ body {
 
   <!-- Main -->
   <main class="main">
-    <div class="topbar">
+    <div class="file-warning" id="fileWarning">
+      ⚠️ <strong>file:// 로컬 실행 중</strong> — Firebase 저장이 차단돼요.
+      VS Code <strong>Live Server</strong>로 열거나,
+      <a href="https://firebase.google.com/docs/hosting" target="_blank">Firebase Hosting</a>에 배포해주세요.
+      (지금은 로컬 저장으로 자동 전환됩니다)
+    </div>
+        <div class="topbar">
       <div class="topbar-left">
         <h1 id="pageTitle">전체 보관함</h1>
         <p id="pageCount">0개의 링크</p>
       </div>
       <div class="topbar-right">
         <div class="view-toggle">
-          <button class="view-btn active" id="gridBtn" onclick="setView('grid')" title="그리드">
+          <button class="view-btn active" id="gridBtn" onclick="window._app.setView('grid')" title="그리드">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
           </button>
-          <button class="view-btn" id="listBtn" onclick="setView('list')" title="리스트">
+          <button class="view-btn" id="listBtn" onclick="window._app.setView('list')" title="리스트">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg>
           </button>
         </div>
-        <button class="add-link-btn" onclick="openAddModal()">
+        <button class="add-link-btn" onclick="window._app.openAddModal()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           링크 추가
         </button>
@@ -930,7 +950,7 @@ body {
       <label class="form-label">인스타그램 URL *</label>
       <div class="url-row">
         <input class="form-input" id="urlInput" placeholder="https://www.instagram.com/p/..." />
-        <button class="fetch-btn" id="fetchBtn" onclick="fetchThumb()">미리보기 ↗</button>
+        <button class="fetch-btn" id="fetchBtn" onclick="window._app.fetchThumb()">미리보기 ↗</button>
       </div>
     </div>
 
@@ -961,8 +981,8 @@ body {
     </div>
 
     <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeModal('addModal')">취소</button>
-      <button class="btn-primary" id="saveBtn" onclick="saveLink()">저장하기</button>
+      <button class="btn-ghost" onclick="window._app.closeModal('addModal')">취소</button>
+      <button class="btn-primary" id="saveBtn" onclick="window._app.saveLink()">저장하기</button>
     </div>
   </div>
 </div>
@@ -985,8 +1005,8 @@ body {
       <div class="color-swatches" id="colorSwatches"></div>
     </div>
     <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeModal('catModal')">취소</button>
-      <button class="btn-primary" onclick="addCategory()">추가</button>
+      <button class="btn-ghost" onclick="window._app.closeModal('catModal')">취소</button>
+      <button class="btn-primary" onclick="window._app.addCategory()">추가</button>
     </div>
   </div>
 </div>
@@ -996,8 +1016,19 @@ body {
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getDatabase, ref, push, set, remove, onValue, update }
+import { getDatabase, ref, push, set, remove, onValue }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+// ─── Firebase Config ──────────────────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBviuL5BgpsOxmGbDPHeq9cL4RBFBkPq7I",
+  authDomain: "my-save-you-i.firebaseapp.com",
+  projectId: "my-save-you-i",
+  storageBucket: "my-save-you-i.firebasestorage.app",
+  messagingSenderId: "1071414406018",
+  appId: "1:1071414406018:web:bc2abd7a4bae62f7ea7d9b",
+  databaseURL: "https://my-save-you-i-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
 
 // ─── State ────────────────────────────────────────────────────────────
 const CAT_COLORS = ['#b5541e','#2d6e5a','#3d5fa0','#7c4fa0','#a08b2d','#a03d5f','#2d7c8a','#6e7c2d','#8a4a2d','#2d5a8a'];
@@ -1011,9 +1042,10 @@ const DEFAULT_CATS = [
   { id: 'cat_etc',     name: '📌 기타',        color: '#7c4fa0' },
 ];
 
+let db = null;
+let useLocal = false;
+
 let st = {
-  db: null,
-  useLocal: false,
   categories: [{ id: 'all', name: '전체', color: '#b5541e', fixed: true }, ...DEFAULT_CATS],
   links: {},
   activeCat: 'all',
@@ -1025,47 +1057,54 @@ let st = {
   viewMode: 'grid',
 };
 
-window._fbModule = { initializeApp, getDatabase, ref, push, set, remove, onValue, update };
-
-// ─── Config Screen ────────────────────────────────────────────────────
-window.connectFirebase = function() {};
-window.useLocalMode = function() { initApp(null, true); };
-
-function initApp(config, localMode) {
-  document.getElementById('configScreen').style.display = 'none';
+// ─── Init ─────────────────────────────────────────────────────────────
+function initApp() {
   document.getElementById('appRoot').style.display = 'flex';
-  st.useLocal = localMode;
 
-  // Load local categories
-  const savedCats = localStorage.getItem('bk_cats');
-  if (savedCats) {
-    try {
+  // file:// 프로토콜이면 Firebase CORS 차단 → 로컬 모드로 자동 전환
+  if (location.protocol === 'file:') {
+    document.getElementById('fileWarning').classList.add('show');
+    setStatus('error', '로컬 파일 모드 (저장 불가)');
+    useLocal = true;
+    loadLocal();
+    render();
+    return;
+  }
+
+  // Load saved categories from localStorage
+  try {
+    const savedCats = localStorage.getItem('bk_cats');
+    if (savedCats) {
       const extra = JSON.parse(savedCats);
       st.categories = [st.categories[0], ...extra];
-    } catch(e) {}
-  }
-
-  if (!localMode && config) {
-    try {
-      const app = initializeApp(config);
-      st.db = getDatabase(app);
-      setStatus('connected', 'Firebase 연결됨');
-      // Listen realtime
-      onValue(ref(st.db, 'links'), snap => {
-        st.links = snap.val() || {};
-        render();
-      });
-    } catch(e) {
-      setStatus('error', '연결 실패 — 로컬 모드');
-      st.useLocal = true;
-      loadLocal();
     }
-  } else {
-    setStatus('', '로컬 저장 모드');
-    loadLocal();
-  }
+  } catch(e) {}
 
-  render();
+  try {
+    const app = initializeApp(FIREBASE_CONFIG);
+    db = getDatabase(app);
+    setStatus('', '연결 중...');
+
+    onValue(ref(db, 'links'), snap => {
+      st.links = snap.val() || {};
+      setStatus('connected', 'Firebase 연결됨');
+      render();
+    }, err => {
+      console.error('Firebase read error:', err.code, err.message);
+      setStatus('error', '읽기 실패: ' + err.code);
+      showToast('Firebase 오류: ' + err.message);
+      useLocal = true;
+      loadLocal();
+      render();
+    });
+  } catch(e) {
+    console.error('Firebase init error:', e);
+    setStatus('error', '연결 실패');
+    showToast('Firebase 초기화 실패: ' + e.message);
+    useLocal = true;
+    loadLocal();
+    render();
+  }
 }
 
 function setStatus(cls, text) {
@@ -1076,7 +1115,6 @@ function setStatus(cls, text) {
 
 function loadLocal() {
   try { st.links = JSON.parse(localStorage.getItem('bk_links') || '{}'); } catch(e) {}
-  render();
 }
 
 function saveLocal() {
@@ -1084,20 +1122,6 @@ function saveLocal() {
   const extra = st.categories.filter(c => !c.fixed);
   localStorage.setItem('bk_cats', JSON.stringify(extra));
 }
-
-// ─── Firebase Config (hardcoded) ──────────────────────────────────────
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBviuL5BgpsOxmGbDPHeq9cL4RBFBkPq7I",
-  authDomain: "my-save-you-i.firebaseapp.com",
-  projectId: "my-save-you-i",
-  storageBucket: "my-save-you-i.firebasestorage.app",
-  messagingSenderId: "1071414406018",
-  appId: "1:1071414406018:web:bc2abd7a4bae62f7ea7d9b",
-  databaseURL: "https://my-save-you-i-default-rtdb.firebaseio.com"
-};
-
-// 설정 화면 건너뛰고 바로 앱 시작
-initApp(FIREBASE_CONFIG, false);
 
 // ─── Render ───────────────────────────────────────────────────────────
 function render() {
@@ -1112,7 +1136,7 @@ function renderSidebar() {
   list.innerHTML = st.categories.map(cat => {
     const cnt = cat.fixed ? linksArr.length : linksArr.filter(l => l.catId === cat.id).length;
     return `
-      <div class="cat-item ${st.activeCat === cat.id ? 'active' : ''}" onclick="selectCat('${cat.id}')">
+      <div class="cat-item ${st.activeCat === cat.id ? 'active' : ''}" onclick="window._app.selectCat('${cat.id}')">
         <div class="cat-left">
           <div class="cat-pip" style="background:${cat.color}"></div>
           <span class="cat-name">${cat.name}</span>
@@ -1127,8 +1151,8 @@ function renderFilterBar() {
   const allTags = [...new Set(Object.values(st.links).flatMap(l => l.tags || []))].sort();
   if (!allTags.length) { bar.innerHTML = ''; return; }
   bar.innerHTML = `
-    <button class="ftag ${!st.activeTag ? 'active' : ''}" onclick="selectTag(null)">전체</button>
-    ${allTags.map(t => `<button class="ftag ${st.activeTag === t ? 'active' : ''}" onclick="selectTag('${esc(t)}')">#${esc(t)}</button>`).join('')}
+    <button class="ftag ${!st.activeTag ? 'active' : ''}" onclick="window._app.selectTag(null)">전체</button>
+    ${allTags.map(t => `<button class="ftag ${st.activeTag === t ? 'active' : ''}" onclick="window._app.selectTag('${esc(t)}')">#${esc(t)}</button>`).join('')}
   `;
 }
 
@@ -1176,13 +1200,13 @@ function renderGridCard(link) {
   const cat = st.categories.find(c => c.id === link.catId);
   const color = cat?.color || '#b5541e';
   const date = new Date(link.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
-  const tags = (link.tags || []).map(t => `<span class="tag-chip" onclick="selectTag('${esc(t)}')">#${esc(t)}</span>`).join('');
+  const tags = (link.tags || []).map(t => `<span class="tag-chip" onclick="window._app.selectTag('${esc(t)}')">#${esc(t)}</span>`).join('');
   const thumb = link.thumb
-    ? `<img src="${esc(link.thumb)}" alt="" onerror="this.parentElement.innerHTML='<div class=\\"card-thumb-placeholder\\"><svg width=\\"32\\" height=\\"32\\" viewBox=\\"0 0 24 24\\" fill=\\"none\\" stroke=\\"currentColor\\" stroke-width=\\"1.5\\"><rect x=\\"2\\" y=\\"2\\" width=\\"20\\" height=\\"20\\" rx=\\"5\\"/><path d=\\"M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z\\"/></svg><span>인스타그램</span></div>'">`
+    ? `<img src="${esc(link.thumb)}" alt="" onerror="this.parentElement.innerHTML='<div class=\"card-thumb-placeholder\"><svg width=\"32\" height=\"32\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><rect x=\"2\" y=\"2\" width=\"20\" height=\"20\" rx=\"5\"/><path d=\"M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z\"/></svg><span>썸네일 없음</span></div>'">`
     : `<div class="card-thumb-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg><span>썸네일 없음</span></div>`;
 
   return `
-    <div class="card" style="animation-delay:${Math.random()*0.1}s">
+    <div class="card">
       <div class="card-thumb">
         ${thumb}
         <span class="card-cat-badge" style="--cat-color:${color}">${cat?.name || '미분류'}</span>
@@ -1194,8 +1218,8 @@ function renderGridCard(link) {
         <div class="card-footer">
           <span class="card-date">${date}</span>
           <div class="card-actions">
-            <button class="icon-btn" onclick="openEdit('${link.id}')" title="수정">✎</button>
-            <button class="icon-btn danger" onclick="deleteLink('${link.id}')" title="삭제">✕</button>
+            <button class="icon-btn" onclick="window._app.openEdit('${link.id}')" title="수정">✎</button>
+            <button class="icon-btn danger" onclick="window._app.deleteLink('${link.id}')" title="삭제">✕</button>
           </div>
         </div>
       </div>
@@ -1206,7 +1230,7 @@ function renderListCard(link) {
   const cat = st.categories.find(c => c.id === link.catId);
   const color = cat?.color || '#b5541e';
   const date = new Date(link.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
-  const tags = (link.tags || []).map(t => `<span class="tag-chip" onclick="selectTag('${esc(t)}')">#${esc(t)}</span>`).join('');
+  const tags = (link.tags || []).map(t => `<span class="tag-chip" onclick="window._app.selectTag('${esc(t)}')">#${esc(t)}</span>`).join('');
   const thumb = link.thumb
     ? `<img src="${esc(link.thumb)}" alt="" onerror="this.style.display='none'">`
     : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text3)"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/></svg>`;
@@ -1218,8 +1242,8 @@ function renderListCard(link) {
         <div class="list-top">
           <span class="list-cat-badge" style="--cat-color:${color}">${cat?.name || '미분류'}</span>
           <div class="card-actions">
-            <button class="icon-btn" onclick="openEdit('${link.id}')" title="수정">✎</button>
-            <button class="icon-btn danger" onclick="deleteLink('${link.id}')" title="삭제">✕</button>
+            <button class="icon-btn" onclick="window._app.openEdit('${link.id}')" title="수정">✎</button>
+            <button class="icon-btn danger" onclick="window._app.deleteLink('${link.id}')" title="삭제">✕</button>
           </div>
         </div>
         ${link.memo ? `<div class="list-memo">${esc(link.memo)}</div>` : ''}
@@ -1233,46 +1257,38 @@ function renderListCard(link) {
 }
 
 // ─── Actions ──────────────────────────────────────────────────────────
-window.selectCat = id => { st.activeCat = id; st.activeTag = null; render(); };
-window.selectTag = t => { st.activeTag = t; render(); };
-window.setView = mode => {
+function selectCat(id) { st.activeCat = id; st.activeTag = null; render(); }
+function selectTag(t) { st.activeTag = t; render(); }
+function setView(mode) {
   st.viewMode = mode;
   document.getElementById('gridBtn').classList.toggle('active', mode === 'grid');
   document.getElementById('listBtn').classList.toggle('active', mode === 'list');
   render();
-};
+}
 
-// ── Thumbnail fetch ──
-window.fetchThumb = async function() {
+// ── Thumbnail ──
+async function fetchThumb() {
   const url = document.getElementById('urlInput').value.trim();
   if (!url) return;
   const btn = document.getElementById('fetchBtn');
   btn.textContent = '가져오는 중...';
   btn.disabled = true;
-
   try {
-    // Try oEmbed (works for public posts, no auth needed)
-    const oembed = `https://graph.facebook.com/v18.0/instagram_oembed?url=${encodeURIComponent(url)}&access_token=placeholder`;
-    // oEmbed without token won't work, so we try a CORS proxy approach via allorigins
     const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://www.instagram.com/oembed/?url=${encodeURIComponent(url)}`)}`;
     const res = await fetch(proxy, { signal: AbortSignal.timeout(5000) });
     const data = await res.json();
     const contents = JSON.parse(data.contents);
-
     if (contents.thumbnail_url) {
       showThumb(contents.thumbnail_url);
       showToast('썸네일을 가져왔어요 ✓');
-    } else {
-      showCustomThumbInput();
-    }
+    } else { showCustomThumbInput(); }
   } catch(e) {
     showCustomThumbInput();
     showToast('자동 미리보기 불가 — 직접 입력해주세요');
   }
-
   btn.textContent = '미리보기 ↗';
   btn.disabled = false;
-};
+}
 
 function showThumb(url) {
   document.getElementById('thumbImg').src = url;
@@ -1289,8 +1305,8 @@ function showCustomThumbInput() {
   });
 }
 
-// ── Add / Edit modal ──
-window.openAddModal = function() {
+// ── Modal: Add/Edit ──
+function openAddModal() {
   st.editId = null;
   document.getElementById('modalTitle').textContent = '링크 저장';
   document.getElementById('urlInput').value = '';
@@ -1303,9 +1319,9 @@ window.openAddModal = function() {
   st.selCat = st.activeCat !== 'all' ? st.activeCat : DEFAULT_CATS[0].id;
   renderCatChips();
   openModal('addModal');
-};
+}
 
-window.openEdit = function(id) {
+function openEdit(id) {
   const link = st.links[id];
   if (!link) return;
   st.editId = id;
@@ -1315,27 +1331,30 @@ window.openEdit = function(id) {
   document.getElementById('tagsInput').value = (link.tags || []).join(', ');
   document.getElementById('thumbInput').value = link.thumb || '';
   if (link.thumb) showThumb(link.thumb);
-  else { document.getElementById('thumbPreview').classList.remove('visible'); document.getElementById('thumbCustomRow').style.display = 'none'; }
+  else {
+    document.getElementById('thumbPreview').classList.remove('visible');
+    document.getElementById('thumbCustomRow').style.display = 'none';
+  }
   st.selCat = link.catId;
   renderCatChips();
   openModal('addModal');
-};
+}
 
 function renderCatChips() {
   const grid = document.getElementById('catChipGrid');
   const cats = st.categories.filter(c => !c.fixed);
   grid.innerHTML = cats.map(c => `
     <button class="cat-chip ${st.selCat === c.id ? 'selected' : ''}"
-            onclick="pickCat('${c.id}')"
+            onclick="window._app.pickCat('${c.id}')"
             style="${st.selCat === c.id ? `background:${c.color};border-color:${c.color}` : ''}">
       <span class="dot" style="background:${c.color};${st.selCat === c.id ? 'opacity:0.4' : ''}"></span>
       ${c.name}
     </button>`).join('');
 }
 
-window.pickCat = id => { st.selCat = id; renderCatChips(); };
+function pickCat(id) { st.selCat = id; renderCatChips(); }
 
-window.saveLink = async function() {
+async function saveLink() {
   const url = document.getElementById('urlInput').value.trim();
   if (!url) { showToast('URL을 입력해주세요'); return; }
 
@@ -1343,61 +1362,65 @@ window.saveLink = async function() {
   const tagsRaw = document.getElementById('tagsInput').value.trim();
   const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
   const thumb = document.getElementById('thumbInput').value.trim();
+  const payload = { url, memo, tags, thumb, catId: st.selCat || DEFAULT_CATS[0].id, createdAt: Date.now() };
 
-  const payload = { url, memo, tags, thumb, catId: st.selCat, createdAt: Date.now() };
-
-  if (st.db && !st.useLocal) {
-    const { ref: dbRef, push: dbPush, set: dbSet, update: dbUpdate } = window._fbModule;
-    if (st.editId) {
-      await dbSet(dbRef(st.db, `links/${st.editId}`), payload);
+  try {
+    if (db && !useLocal) {
+      if (st.editId) {
+        await set(ref(db, `links/${st.editId}`), payload);
+      } else {
+        await push(ref(db, 'links'), payload);
+      }
     } else {
-      await dbPush(dbRef(st.db, 'links'), payload);
+      if (st.editId) {
+        st.links[st.editId] = payload;
+      } else {
+        st.links['l' + Date.now()] = payload;
+      }
+      saveLocal();
+      render();
     }
-  } else {
-    if (st.editId) {
-      st.links[st.editId] = { ...payload };
-    } else {
-      const id = 'l' + Date.now();
-      st.links[id] = payload;
-    }
-    saveLocal();
-    render();
+    closeModal('addModal');
+    showToast(st.editId ? '수정되었습니다 ✓' : '저장되었습니다 ✓');
+  } catch(e) {
+    console.error('saveLink error:', e.code, e.message, e);
+    showToast('저장 실패: ' + (e.code || e.message));
   }
+}
 
-  closeModal('addModal');
-  showToast(st.editId ? '수정되었습니다 ✓' : '저장되었습니다 ✓');
-};
-
-window.deleteLink = async function(id) {
+async function deleteLink(id) {
   if (!confirm('이 링크를 삭제할까요?')) return;
-  if (st.db && !st.useLocal) {
-    const { ref: dbRef, remove: dbRemove } = window._fbModule;
-    await dbRemove(dbRef(st.db, `links/${id}`));
-  } else {
-    delete st.links[id];
-    saveLocal();
-    render();
+  try {
+    if (db && !useLocal) {
+      await remove(ref(db, `links/${id}`));
+    } else {
+      delete st.links[id];
+      saveLocal();
+      render();
+    }
+    showToast('삭제되었습니다');
+  } catch(e) {
+    showToast('삭제 실패: ' + e.message);
   }
-  showToast('삭제되었습니다');
-};
+}
 
 // ── Category modal ──
-window.openCatModal = function() {
+function openCatModal() {
   document.getElementById('catNameInput').value = '';
   st.selColor = CAT_COLORS[0];
   renderSwatches();
   openModal('catModal');
-};
+}
 
 function renderSwatches() {
   document.getElementById('colorSwatches').innerHTML = CAT_COLORS.map(c =>
-    `<div class="swatch ${st.selColor === c ? 'selected' : ''}" style="background:${c}" onclick="pickColor('${c}')"></div>`
+    `<div class="swatch ${st.selColor === c ? 'selected' : ''}" style="background:${c}" onclick="window._app.pickColor('${c}')"></div>`
   ).join('');
 }
 
-window.pickColor = c => { st.selColor = c; renderSwatches(); };
+function pickColor(c) { st.selColor = c; renderSwatches(); }
 
-window.addCategory = function() {
+function addCategory() {
   const name = document.getElementById('catNameInput').value.trim();
   if (!name) { showToast('이름을 입력해주세요'); return; }
   const id = 'cat_' + Date.now();
@@ -1406,19 +1429,19 @@ window.addCategory = function() {
   closeModal('catModal');
   render();
   showToast(`'${name}' 카테고리 추가 ✓`);
-};
-
-// ── Search ──
-document.getElementById('searchInput').addEventListener('input', e => {
-  st.searchQ = e.target.value;
-  render();
-});
+}
 
 // ── Modal helpers ──
 function openModal(id) { document.getElementById(id).classList.add('open'); }
-window.closeModal = id => document.getElementById(id).classList.remove('open');
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
 document.querySelectorAll('.overlay').forEach(el => {
-  el.addEventListener('click', e => { if (e.target === el) window.closeModal(el.id); });
+  el.addEventListener('click', e => { if (e.target === el) closeModal(el.id); });
+});
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  st.searchQ = e.target.value;
+  render();
 });
 
 // ── Toast ──
@@ -1429,12 +1452,21 @@ function showToast(msg) {
   clearTimeout(t._t);
   t._t = setTimeout(() => t.classList.remove('show'), 2400);
 }
-window.showToast = showToast;
 
-// ── Escape ──
 function esc(s = '') {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── Expose to HTML onclick handlers ──
+window._app = {
+  selectCat, selectTag, setView, fetchThumb,
+  openAddModal, openEdit, saveLink, deleteLink,
+  pickCat, openCatModal, pickColor, addCategory,
+  closeModal
+};
+
+// ── Start ──
+initApp();
 </script>
 </body>
 </html>
